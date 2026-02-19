@@ -18,8 +18,15 @@ export const catalogoApi = {
   },
 
   criar: async (payload: CatalogoCreate): Promise<Catalogo> => {
-    const { data } = await api.post<Catalogo>('/catalogo/', payload)
-    return data
+    console.log('[CATALOGO API] Enviando payload:', JSON.stringify(payload, null, 2))
+    try {
+      const { data } = await api.post<Catalogo>('/catalogo/', payload)
+      console.log('[CATALOGO API] Resposta recebida:', data)
+      return data
+    } catch (error) {
+      console.error('[CATALOGO API] Erro ao criar:', error)
+      throw error
+    }
   },
 
   atualizar: async (id: number, payload: CatalogoUpdate): Promise<Catalogo> => {

@@ -39,10 +39,21 @@ const schema = z
       required_error: "Selecione o tipo",
     }),
     parent_id: z.preprocess(
-      (v) => (v === "" || v === null || v === undefined ? null : Number(v)),
-      z.number().nullable().optional(),
+      (v) => {
+        if (v === "" || v === null || v === undefined) return null;
+        const num = Number(v);
+        return isNaN(num) ? null : num;
+      },
+      z.number().int().positive().nullable().optional(),
     ),
-    complexidade_ust: z.coerce.number().min(0).nullable().optional(),
+    complexidade_ust: z.preprocess(
+      (v) => {
+        if (v === "" || v === null || v === undefined) return null;
+        const num = Number(v);
+        return isNaN(num) ? null : num;
+      },
+      z.number().min(0).nullable().optional(),
+    ),
   })
   .refine(
     (data) => {
@@ -321,24 +332,30 @@ export function CatalogPage() {
 
   const onSubmit = (data: FormData) => {
     if (editTarget) {
-      updateMutation.mutate({
+      const payload = {
         id: editTarget.id,
         data: {
           nome: data.nome,
           complexidade_ust:
             editTarget.tipo === "ATIVIDADE"
-              ? (data.complexidade_ust ?? 0)
+              ? (data.complexidade_ust && Number(data.complexidade_ust) > 0 ? Number(data.complexidade_ust) : 0)
               : undefined,
         },
-      });
+      };
+      console.log('[FORM] Enviando UPDATE:', JSON.stringify(payload, null, 2));
+      updateMutation.mutate(payload);
     } else {
-      createMutation.mutate({
+      const payload = {
         nome: data.nome,
         tipo: data.tipo,
-        parent_id: data.parent_id ?? null,
+        parent_id: data.parent_id ? Number(data.parent_id) : null,
         complexidade_ust:
-          data.tipo === "ATIVIDADE" ? (data.complexidade_ust ?? 0) : null,
-      });
+          data.tipo === "ATIVIDADE" 
+            ? (data.complexidade_ust ? Number(data.complexidade_ust) : 0)
+            : null,
+      };
+      console.log('[FORM] Enviando CREATE:', JSON.stringify(payload, null, 2));
+      createMutation.mutate(payload);
     }
   };
 

@@ -29,10 +29,20 @@ def criar_catalogo(
     usuario_admin: Usuario = Depends(verificar_admin),
 ):
     """Cria novo catálogo com validação de hierarquia."""
+    import sys
+    import json
+    
+    # Debug logs
+    print(f"[DEBUG] Dados recebidos: {dados.dict()}", file=sys.stderr)
+    
+    # Validações básicas
+    if not dados.nome or not dados.nome.strip():
+        raise HTTPException(status_code=400, detail="Nome não pode ser vazio")
+    
     # regras de hierarquia
     if dados.tipo == "CICLO":
         if dados.parent_id is not None:
-            raise HTTPException(status_code=400, detail="Ciclo n�o pode ter parent_id")
+            raise HTTPException(status_code=400, detail="Ciclo não pode ter parent_id")
     elif dados.tipo == "FASE":
         if dados.parent_id is None:
             raise HTTPException(
@@ -40,7 +50,7 @@ def criar_catalogo(
             )
         parent = db.query(ServicosCatalogo).get(dados.parent_id)
         if not parent or parent.tipo != "CICLO":
-            raise HTTPException(status_code=400, detail="Parent inv�lido para fase")
+            raise HTTPException(status_code=400, detail="Parent inválido para fase")
     elif dados.tipo == "ATIVIDADE":
         if dados.parent_id is None:
             raise HTTPException(
@@ -49,21 +59,25 @@ def criar_catalogo(
         parent = db.query(ServicosCatalogo).get(dados.parent_id)
         if not parent or parent.tipo != "FASE":
             raise HTTPException(
-                status_code=400, detail="Parent inv�lido para atividade"
+                status_code=400, detail="Parent inválido para atividade"
             )
-        if dados.complexidade_ust is None:
-            raise HTTPException(status_code=400, detail="Atividade requer complexidade")
+        if dados.complexidade_ust is None or dados.complexidade_ust <= 0:
+            raise HTTPException(status_code=400, detail="Atividade requer complexidade maior que 0")
 
     novo = ServicosCatalogo(
-        nome=dados.nome,
+        nome=dados.nome.strip(),
         tipo=dados.tipo,
         parent_id=dados.parent_id,
         complexidade_ust=dados.complexidade_ust or Decimal("0.0000"),
     )
-    db.add(novo)
-    db.commit()
-    db.refresh(novo)
-    return novo
+    try:
+        db.add(novo)
+        db.commit()
+        db.refresh(novo)
+        return novo
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao criar catálogo: {str(e)}")
 
 
 @catalog_router.get("/", response_model=list[CatalogoResponse])

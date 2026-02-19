@@ -23,6 +23,12 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    console.log('[AXIOS] Request config:', {
+      method: config.method,
+      url: config.url,
+      headers: config.headers,
+      data: config.data,
+    })
     return config
   },
   (error) => Promise.reject(error)
