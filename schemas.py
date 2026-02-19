@@ -100,7 +100,7 @@ class ServicosCatalogoResponse(BaseModel):
 
 # ========== CATALOGO UNIFICADO ==========
 class CatalogoCreate(BaseModel):
-    nome: str
+    nome: str = Field(..., min_length=1, description="Nome do item, não pode estar vazio")
     tipo: str = Field(..., pattern="^(CICLO|FASE|ATIVIDADE)$")
     parent_id: Optional[int] = None
     complexidade_ust: Optional[Decimal] = Field(None, ge=0, decimal_places=4)
@@ -110,7 +110,7 @@ class CatalogoCreate(BaseModel):
 
 
 class CatalogoUpdate(BaseModel):
-    nome: Optional[str] = None
+    nome: Optional[str] = Field(None, min_length=1, description="Nome do item, não pode estar vazio se fornecido")
     parent_id: Optional[int] = None
     complexidade_ust: Optional[Decimal] = Field(None, ge=0, decimal_places=4)
 
